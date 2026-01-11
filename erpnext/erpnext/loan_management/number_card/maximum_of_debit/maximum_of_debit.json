@@ -1,0 +1,22 @@
+{
+ "creation": "2025-09-14 11:41:09.935060",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "filters_json": "{\"company\":\"Royal Hospital\",\"from_date\":\"2025-09-12\",\"to_date\":\"2025-09-14\",\"account\":[\"Billing Account Pharmacy - RH\"],\"party\":[],\"group_by\":\"Group by Voucher (Consolidated)\",\"cost_center\":[],\"project\":[],\"include_dimensions\":1,\"include_default_book_entries\":1}",
+ "function": "Count",
+ "idx": 0,
+ "is_public": 0,
+ "is_standard": 1,
+ "label": "Maximum of Debit",
+ "modified": "2025-09-14 11:41:10.013664",
+ "modified_by": "zaki@royal.so",
+ "module": "Loan Management",
+ "name": "Maximum of Debit",
+ "owner": "zaki@royal.so",
+ "report_field": "debit",
+ "report_function": "Maximum",
+ "report_name": "General Ledger",
+ "show_percentage_stats": 1,
+ "stats_time_interval": "Daily",
+ "type": "Report"
+}

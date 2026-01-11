@@ -1,0 +1,14 @@
+
+*.pyc
+__pycache__/
+.env
+node_modules/
+logs/
+*.log
+*.sqlite
+sites/
+# DB dumps
+*.sql
+*.sql.gz
+*.dump
+*.dmp

@@ -1,0 +1,22 @@
+{
+ "creation": "2024-08-23 23:30:43.926903",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "filters_json": "{\"company\":\"Royal Hospital\",\"from_date\":\"2024-07-23\",\"to_date\":\"2024-08-23\"}",
+ "function": "Count",
+ "idx": 0,
+ "is_public": 0,
+ "is_standard": 1,
+ "label": "Sum of Closing_balance",
+ "modified": "2024-08-23 23:30:43.986398",
+ "modified_by": "ismail@royal.so",
+ "module": "Accounts",
+ "name": "Sum of Closing_balance",
+ "owner": "ismail@royal.so",
+ "report_field": "closing_balance",
+ "report_function": "Sum",
+ "report_name": "Supplier Ledger Summary",
+ "show_percentage_stats": 1,
+ "stats_time_interval": "Daily",
+ "type": "Report"
+}
