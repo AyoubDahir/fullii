@@ -1,4 +1,13 @@
-frappe.pages['admission-scheduled'].on_page_load = function(wrapper) {
+// frappe.pages['neonatal-icu'].on_page_load = function(wrapper) {
+// 	var page = frappe.ui.make_app_page({
+// 		parent: wrapper,
+// 		title: 'NICU',
+// 		single_column: true
+// 	});
+// }
+
+
+frappe.pages['neonatal-icu'].on_page_load = function(wrapper) {
 	new IPD(wrapper)
 }
 
@@ -7,7 +16,7 @@ IPD = Class.extend(
 		init:function(wrapper){
 			this.page = frappe.ui.make_app_page({
 				parent : wrapper,
-				title: "Admission Scheduled",
+				title: "NICU",
 				single_column : true
 			});
 			this.groupbyD = []
@@ -15,17 +24,17 @@ IPD = Class.extend(
 			this.make()
 			this.setupdata_table()
 			this.make_grouping_btn()
-			let myf_ads = this
+			let myf = this
 			frappe.realtime.on('inp_update', (data) => {
 				// alert("in realtime")
-				myf_ads.setupdata_table()
+				myf.setupdata_table()
 					})
 			// this.grouping_cols()
 		},
 		make:function(){
 
 		
-			let me_s = this
+			let me = this
 			// let date = this.page.add_field({
 			// 	fieldtype: 'Date',
 			
@@ -44,7 +53,7 @@ IPD = Class.extend(
 			// });
    		
    		
-			$(frappe.render_template(frappe.dashbard_page.body, me_s)).appendTo(me_s.page.main)
+			$(frappe.render_template(frappe.dashbard_page.body, me)).appendTo(me.page.main)
 
 
 
@@ -53,17 +62,25 @@ IPD = Class.extend(
 		},
 
 		setupdata_table : function(gr_ref){
-			
+			let currdate = this.currDate
 		let tbldata = []
 		frappe.db.get_list('Inpatient Record', {
-			fields: ['name','patient','patient_name', 'room' , 'bed' , 'status' ,'scheduled_date' , 'admission_practitioner', 'diagnose'],
+			fields: ['patient','patient_name', 'age', 'dob', 'type','room' , 'bed' , 'admitted_datetime' , 'admission_practitioner' , 'diagnose'],
 			filters: {
-				status: 'Admission Scheduled'
+				"status": 'Admitted',
+				"type": "NICU"
 			},
 			limit : 1000
 		}).then(r => {
 			// console.log(r)
-			
+			// calculate age for each patient
+			r.forEach(row => {
+				if (row.dob) {
+					row.age = calculate_age(row.dob);
+				} else {
+					row.age = "Unknown";
+				}
+			});
             // code snippet
             // $(frappe.render_template(frappe.render_template('dashboard_page' ,{"data" : r.message }), me)).appendTo(me.page.main)
 			tbldata = r
@@ -72,23 +89,27 @@ IPD = Class.extend(
 
 			// let doct ='Sales Order'.replace(' ' , '-').toLowerCase()
 		
-	
+		 let me = this
 		//  let fields = frappe.get_meta("Sales Order").fields
 		 	columns = [
 			// {title:"ID", field:"name"},
 			// {title:"Patient", field:"customer"},
+			{title:"No", field:"id", formatter:"rownum"},
 			{title:"PID", field:"patient" ,  headerFilter:"input"},
 			{title:"Patient Name", field:"patient_name" ,  headerFilter:"input"},
-			{title:"Date", field:"scheduled_date" ,  headerFilter:"input"},
+			{title:"Age", field:"age" ,  headerFilter:"input"},
+			{title:"Type", field:"type" ,  headerFilter:"input"},
+			{title:"Date", field:"admitted_datetime" ,  headerFilter:"input"},
+			{title:"Duration", field:"duration" ,  headerFilter:"input" , formatter:durationformatter},
 			{title:"Doctor Name", field:"admission_practitioner" ,  headerFilter:"input",},
-			// {title:"Room", field:"room" ,  headerFilter:"input",},
+			{title:"Room", field:"room" ,  headerFilter:"input",},
 			
-			// {title:"Bed", field:"bed" ,  headerFilter:"input",},
-			{title:"Status", field:"status" ,  headerFilter:"input",},
-			{title:"Diagnose", field:"diagnose" ,  headerFilter:"input",},
+			{title:"Bed", field:"bed" ,  headerFilter:"input",},
+			// {title:"Status", field:"inpatient_status" ,  headerFilter:"input",},
+			{title:"Diagnosis", field:"diagnose" ,  headerFilter:"input",},
 			
 
-			{title:"Action", field:"action", hozAlign:"center" , formatter:"html"},
+			// {title:"Action", field:"action", hozAlign:"center" , formatter:"html"},
 			
 		 ]
 		//  fields.forEach(field => {
@@ -114,9 +135,9 @@ IPD = Class.extend(
 
 		// }
 		// console.log("this is ",doctype)
-		// let list_btns = frappe.listview_settings[`Sales Invoice`]
+		let list_btns = frappe.listview_settings[`Sales Invoice`]
 		// tbldata = tbldata[0]['action'] = "Button"
-		let new_data_ad_s = []
+		let new_data = []
 		// if(list_btns)
 		// console.log(tbldata)
 		tbldata.forEach(row => {
@@ -129,12 +150,12 @@ IPD = Class.extend(
 			let btnhml = ''
 			// if(row.status !== "Draft" && row.status !== "Cancelled" && row.status!= "Completed" ){
 			
-			btnhml += `
-			<button class='btn btn-primary ml-2' onclick = "admit('${row.name}','${row.patient }', '${row.admission_practitioner }')"> Admit</button>
-			<button class='btn btn-danger ml-2' onclick = "cancel_admision('${row.name}','${row.patient }')"> Cancell</button>
+			// btnhml += `
+			// <button class='btn btn-primary ml-2' onclick = "get_history('${row.patient }' , '${row.patient_name}')"> History</button>
 		
+			// <button class='btn btn-danger ml-2' onclick = "credit_sales('${row.name}')"> Ready To Surgery</button>
 			
-			`
+			// `
 			// }
 			// else{
 			// 	btnhml += `
@@ -156,10 +177,11 @@ IPD = Class.extend(
 			// 	}
 			// }
 			row['action'] = btnhml
-			new_data_ad_s.push(row)
+			row['duration']  = row.admitted_datetime
+			new_data.push(row)
 		})
 		// console.log(columns)
-this.table = new Tabulator("#ad_sche", {
+this.table = new Tabulator("#ipd", {
 			// layout:"fitDataFill",
 			layout:"fitDataStretch",
 			//  layout:"fitColumns",
@@ -207,11 +229,11 @@ this.table = new Tabulator("#ad_sche", {
 		 
 			 // ],
 			 
-			 data: new_data_ad_s
+			 data: new_data
 		 });
 		 
 		 //  table.getSelectedData(); 
-		
+		//  let row = this
 		//  this.table.on("rowClick", function(e ,rows){
 		// 	 let selectedRows = row.table.getSelectedRows(); 
 		// 	 // console.log(rows._row.data)
@@ -227,6 +249,25 @@ this.table = new Tabulator("#ad_sche", {
 		//   });
 		  
 		// 	});
+		let row = this
+		this.table.on("rowClick", function(e ,rows){
+		   let target = e.target.nodeName
+		   //  let selectedRows = row.table.getSelectedRows(); 
+			// console.log(rows._row.data)
+		   //  console.log(row.table.getSelectedData())
+		   //  row.toggle_actions_menu_button(row.table.getSelectedData().length > 0);
+		  
+		frappe.new_doc("Patient History" , {
+			patient: rows._row.data.patient , 
+			type: rows._row.data.type , 
+			consultant: rows._row.data.admission_practitioner,
+			floor: rows._row.data.floor , 
+			room: rows._row.data.room , 
+			bed: rows._row.data.bed
+		})
+		
+			// document.getElementById("select-stats").innerHTML = data.length;
+		  });
 		
 	
 });
@@ -234,9 +275,9 @@ this.table = new Tabulator("#ad_sche", {
 
 
 		make_grouping_btn:function(){
-			let listitmes_ad_sc = ''
+			let listitmes = ''
 			
-			
+			let me = this
 			let columns = [
 				{title:"ID", field:"name"},
 				{title:"Customer", field:"customer"},
@@ -246,7 +287,7 @@ this.table = new Tabulator("#ad_sche", {
 				columns.forEach(field => {
 					// console.log(field)
 					// if(field.docfield.fieldtype !== "Currency"){
-						listitmes_ad_sc += `
+						listitmes += `
  
 						<li>
 						<input type="checkbox" class="form-check-input groupcheck ml-2"  value = '${field.field}' >
@@ -267,7 +308,7 @@ this.table = new Tabulator("#ad_sche", {
 			// 	<ul class="dropdown-menu dropdown-menu-right">
 				
 					
-			// 		${listitmes_ad_sc}
+			// 		${listitmes}
 			// 	</ul>
 			// </button>
 				$(`<div class="mt-2 sort-selector">
@@ -275,10 +316,10 @@ this.table = new Tabulator("#ad_sche", {
 	
 	
 	
-				<button type="button" class="btn btn-primary" onclick="add_inpatient()">Add New<b class="caret"></b></a>
+				<button type="button" class="btn btn-default btn-sm"<a href="#" data-toggle="dropdown" class="dropdown-toggle">Group<b class="caret"></b></a>
 				</button>
 				<ul class="dropdown-menu">
-				${listitmes_ad_sc}
+				${listitmes}
 			</ul>
 				</div>`).appendTo('.page-head')
 			
@@ -288,7 +329,7 @@ this.table = new Tabulator("#ad_sche", {
 
 		grouping_cols:function(){
 		
-			let me_set = this
+			let me = this
 			$('.groupcheck').change(function() {
 				// alert ("The element with id " + this.value + " changed.");
 				let value = this.value
@@ -298,7 +339,7 @@ this.table = new Tabulator("#ad_sche", {
 				else{
 					groupbyD = groupbyD.filter(function(e) { return e !== value })
 				}
-				me_set.setupdata_table(true);
+				me.setupdata_table(true);
 				// setup_datatable()
 				
 			});
@@ -325,12 +366,12 @@ this.table = new Tabulator("#ad_sche", {
 
 	
 )
-let ScheduleAd = `
+let ipd_ = `
 
 <div class="container">
 <div class="row">
 
-<div id="ad_sche" style = "min-width : 100%"></div>
+<div id="ipd" style = "min-width : 100%"></div>
 
 </div>
 
@@ -341,7 +382,7 @@ let ScheduleAd = `
 
 `
 frappe.dashbard_page = {
-	body : ScheduleAd
+	body : ipd_
 }
 
 get_history = function(patient , patient_name){
@@ -413,183 +454,38 @@ credit_sales = function(source_name){
 }
 
 
-
-function cancel_admision(inpatient_record, patient){
-	frappe.confirm('Are you sure you want to Cancelled?',
-    () => {
-        // action to perform if Yes is selected
-		frappe.call({
-			
-			method: 'his.api.admission_schd.cancel_admision',
-			args:{
-				
-				"inp_doc" :inpatient_record,
-			},
-			callback: function(data) {
-				frappe.msgprint("Cancelled Succesfullyss")
-				location.reload();
-
-			}
-		})
-    }, () => {
-        // action to perform if No is selected
-    })
-
-
+durationformatter = function(cell, formatterParams, onRendered){
+	return frappe.datetime.prettyDate(cell.getValue() , 1)
 }
+// let calculate_age = function(birth) {
+//     let ageMS = Date.parse(Date()) - Date.parse(birth);
+//     let age = new Date();
+//     age.setTime(ageMS);
+//     let years = age.getFullYear() - 1970;
+//     return `${years} Years(s) ${age.getMonth()} Month(s) ${age.getDate()} Day(s)`;
+// };
 
-function admit(inpatient_record, patient, practitioner){
-	// alert(patient)
+let calculate_age = function(birth) {
+    let birthDate = new Date(birth);
+    let today = new Date();
 
-	let d = new frappe.ui.Dialog({
-		title: 'Enter details',
-		fields: [
-			{fieldtype: 'Link', label: 'Type', fieldname: 'type', options: 'Inpatient Type',reqd: 1 , default: "IPD"},
-			{fieldtype: 'Link', label: 'Room', fieldname: 'room', options: 'Healthcare Service Unit Type',reqd: 1},
-			{fieldtype: 'Link', label: 'Bed', fieldname: 'bed', options: 'Healthcare Service Unit', reqd: 1},
-			{fieldtype: 'Link', label: 'Additional Bed', fieldname: 'bed2', options: 'Healthcare Service Unit', reqd: 0, "hidden": 1},
-			{fieldtype: 'Datetime', label: 'Check In', fieldname: 'check_in', reqd: 1, default: frappe.datetime.now_datetime()}
-			   
-	
-		],
-		primary_action_label: 'Submit',
-		primary_action(values) {
-			admit_p(inpatient_record ,values.bed , patient,  practitioner, values.type)
-			// alert("ok")
-				// console.log(values.room)
-			//    frappe.route_options = {'room': values.room , "type" : values.type  , "inp_doc" : inpatient_record  , "patient" : patient };
-			// 	frappe.set_route('room');
-			d.hide();
-		}
-	});
-		d.fields_dict['room'].get_query = function(){
-		return {
-			filters: {
-				'inpatient_occupancy': 1,
-				'Type':d.get_value('type'),
-			}
-		};
-	};
+    let years = today.getFullYear() - birthDate.getFullYear();
+    let months = today.getMonth() - birthDate.getMonth();
+    let days = today.getDate() - birthDate.getDate();
 
-	d.fields_dict['bed'].get_query = function(){
-		return {
-			filters: {
-				'inpatient_occupancy': 1,
-				'service_unit_type':d.get_value('room'),
-				"occupancy_status": "Vacant"
-			}
-		};
-	};
-	
-	d.show();
-}
+    // Adjust for negative days
+    if (days < 0) {
+        months--;
+        // Get total days in previous month
+        let prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+        days += prevMonth.getDate();
+    }
 
-function admit_p(inpatient_record, bed,patient_name,practitioner, type){
-	frappe.call({
-			
-		method: 'his.api.admit.admit_p',
-		args:{
-			
-			"inp_doc" :inpatient_record,
-			'service_unit': bed,
-			"patient":patient_name,
-			"practitioner":practitioner,
-			'type' : type
-			
-			
-			// "is_insurance" : data.ref_insturance
-			// 'check_in': Date(),
-			// 'expected_discharge': expected_discharge
-		},
-		callback: function(data) {
-			frappe.msgprint("Admited")
-			window.location.reload();
+    // Adjust for negative months
+    if (months < 0) {
+        years--;
+        months += 12;
+    }
 
-		}
-	})
-
-}
-
-
-function add_inpatient(){
-	let d = new frappe.ui.Dialog({
-		title: 'Enter details',
-		fields: [
-			{
-				label: 'Patient',
-				fieldname: 'patient',
-				fieldtype: 'Link',
-				options: 'Patient',
-				reqd : 1,
-				
-			},
-			// {
-			// 	label: 'Patient Name',
-			// 	fieldname: 'diagnosis',
-			// 	fieldtype: 'Data',
-			// 	fetch_from : "patient.full_name",
-			// 	read_only : 1
-				
-			// },
-			{
-				label: 'Practitioner',
-				fieldname: 'practitioner',
-				fieldtype: 'Link',
-				options: 'Healthcare Practitioner',
-				reqd : 1,
-				
-			},
-			{
-				label: 'Diagnosis',
-				fieldname: 'diagnosis',
-				fieldtype: 'Data',
-				
-				reqd : 0,
-				
-			},
-		
-		 
-		],
-		primary_action_label: 'Submit',
-		primary_action(values) {
-			//   let practitioner = d.get_value("practitioner")
-			//   let patient = d.get_value("patient")
-			 
-			  var args = {
-				patient: patient = d.get_value("patient"),
-				primary_practitioner :  d.get_value("practitioner"),
-                diagnosis : d.get_value('diagnosis'),
-				// admission_encounter: ""
-                
-				
-			}
-		
-				frappe.call({
-						method: "his.api.admission_schd.schedule_inpatient", //dotted path to server method
-						args: {
-							args: args
-						},
-						callback: function(r) {
-							// code snippet
-							// console.log(r)
-						window.location.reload();
-						 frappe.utils.play_sound("submit")
-	
-							frappe.show_alert({
-						message:__('You have Refered Patient Succesfully'),
-						indicator:'green',
-						
-					}, 5);
-					
-						}
-	});
-			d.hide();
-	
-		
-		}
-		
-	});
-	
-	d.show();
-				 
-} 
+    return `${years} Year(s) ${months} Month(s) ${days} Day(s)`;
+};

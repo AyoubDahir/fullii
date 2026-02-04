@@ -32,11 +32,15 @@ def transfer_patient(inpatient_record, service_unit, check_in):
 	frappe.db.set_value("Healthcare Service Unit", service_unit, "occupancy_status", "Occupied")
 
 @frappe.whitelist()
-def  admit_p(inp_doc, service_unit,patient, is_insurance = "", expected_discharge=None):
+def  admit_p(inp_doc, service_unit,patient,type, practitioner, is_insurance = "", expected_discharge=None):
 	ip_doc = frappe.get_doc("Inpatient Record" , inp_doc)
 	frappe.db.set_value('Healthcare Service Unit', service_unit, 'patient',patient)
 	ip_doc.bed=service_unit
 	ip_doc.room=frappe.db.get_value("Healthcare Service Unit", service_unit , "service_unit_type")
+	ip_doc.type = type
+	if practitioner:
+		ip_doc.primary_practitioner = practitioner
+		ip_doc.secondary_practitioner = practitioner
 	ip_doc.inpatient_status = "Admitted"
 	ip_doc.save()
 	if is_insurance:

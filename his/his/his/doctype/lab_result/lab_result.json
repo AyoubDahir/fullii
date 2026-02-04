@@ -521,7 +521,7 @@
  "in_create": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-03 09:27:35.314805",
+ "modified": "2026-01-22 17:11:21.739920",
  "modified_by": "Administrator",
  "module": "HIS",
  "name": "Lab Result",
@@ -597,7 +597,5 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "patient_name",
- "track_changes": 1,
- "track_seen": 1
+ "title_field": "patient_name"
 }

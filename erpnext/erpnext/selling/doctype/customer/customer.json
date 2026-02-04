@@ -569,7 +569,7 @@
    "link_fieldname": "party"
   }
  ],
- "modified": "2024-07-18 12:37:14.759052",
+ "modified": "2026-01-22 17:14:37.830495",
  "modified_by": "Administrator",
  "module": "Selling",
  "name": "Customer",
@@ -654,6 +654,5 @@
  "sort_field": "modified",
  "sort_order": "ASC",
  "states": [],
- "title_field": "customer_name",
- "track_changes": 1
+ "title_field": "customer_name"
 }

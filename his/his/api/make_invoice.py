@@ -4,6 +4,40 @@ from erpnext.stock.doctype.item.item import get_item_defaults
 from frappe.model.mapper import get_mapped_doc
 from erpnext.setup.doctype.item_group.item_group import get_item_group_defaults
 from frappe.contacts.doctype.address.address import get_company_address
+
+
+def _get_default_user_warehouse(user=None):
+	user = user or frappe.session.user
+
+	# 1) User Permission default Warehouse (best)
+	wh = frappe.db.get_value(
+		"User Permission",
+		{"user": user, "allow": "Warehouse", "is_default": 1},
+		"for_value",
+	)
+	if wh:
+		return wh
+
+	# 2) User Defaults fallback (if you use it)
+	wh = frappe.defaults.get_user_default("warehouse", user=user)
+	return wh
+
+# def _apply_default_user_warehouse(target):
+# 	user_wh = _get_default_user_warehouse()
+# 	if not user_wh:
+# 		return
+# 	for it in (target.get("items") or []):
+# 		it.warehouse = user_wh
+
+def _apply_default_user_warehouse(target):
+	user_wh = _get_default_user_warehouse()
+	if not user_wh:
+		return
+	for it in (target.get("items") or []):
+		if it.item_code and cint(frappe.get_cached_value("Item", it.item_code, "is_stock_item") or 0):
+			it.warehouse = user_wh
+
+
 @frappe.whitelist()
 def make_sales_invoice(source_name, target_doc=None, ignore_permissions=True):
 	def postprocess(source, target):
@@ -21,6 +55,9 @@ def make_sales_invoice(source_name, target_doc=None, ignore_permissions=True):
 		target.flags.ignore_permissions = True
 		target.run_method("set_missing_values")
 		target.run_method("set_po_nos")
+
+		_apply_default_user_warehouse(target)
+
 		target.run_method("calculate_taxes_and_totals")
 		
        
@@ -110,6 +147,9 @@ def make_credit_invoice(source_name, target_doc=None, ignore_permissions=False):
 		target.flags.ignore_permissions = True
 		target.run_method("set_missing_values")
 		target.run_method("set_po_nos")
+		
+		_apply_default_user_warehouse(target)
+
 		target.run_method("calculate_taxes_and_totals")
 
 		if source.company_address:
@@ -196,6 +236,9 @@ def make_credit_invoice_ipd(source_name, target_doc=None, ignore_permissions=Fal
 		target.flags.ignore_permissions = True
 		target.run_method("set_missing_values")
 		target.run_method("set_po_nos")
+		
+		_apply_default_user_warehouse(target)
+
 		target.run_method("calculate_taxes_and_totals")
 
 		if source.company_address:
@@ -290,6 +333,9 @@ def make_sales_invoice_direct(source_name , amount  , mode_of_payment = None, re
 		target.flags.ignore_permissions = True
 		target.run_method("set_missing_values")
 		target.run_method("set_po_nos")
+		
+		_apply_default_user_warehouse(target)
+
 		target.run_method("calculate_taxes_and_totals")
 
 		if source.company_address:
@@ -376,6 +422,9 @@ def make_emergency_invoice(source_name, target_doc=None, ignore_permissions=True
 		target.flags.ignore_permissions = True
 		target.run_method("set_missing_values")
 		target.run_method("set_po_nos")
+		
+		_apply_default_user_warehouse(target)
+
 		target.run_method("calculate_taxes_and_totals")
 		target.set_warehouse = 'Emergency Store - ABH'
        
@@ -470,6 +519,9 @@ def make_sales_invoice_direct(source_name , amount  , mode_of_payment = None, ta
 		target.flags.ignore_permissions = True
 		target.run_method("set_missing_values")
 		target.run_method("set_po_nos")
+		
+		_apply_default_user_warehouse(target)
+
 		target.run_method("calculate_taxes_and_totals")
 
 		if source.company_address:
@@ -558,6 +610,9 @@ def make_credit_invoice_from_lab_result(source_name, items, target_doc=None, ign
 		target.flags.ignore_permissions = True
 		target.run_method("set_missing_values")
 		target.run_method("set_po_nos")
+		
+		_apply_default_user_warehouse(target)
+
 		target.run_method("calculate_taxes_and_totals")
 		# target.set_warehouse = 'Emergency Store - D'
 

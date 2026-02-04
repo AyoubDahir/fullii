@@ -669,6 +669,7 @@
    "print_hide": 1
   },
   {
+   "allow_on_submit": 1,
    "depends_on": "update_stock",
    "fieldname": "set_warehouse",
    "fieldtype": "Link",
@@ -2158,7 +2159,7 @@
    "link_fieldname": "consolidated_invoice"
   }
  ],
- "modified": "2025-04-01 09:25:27.328943",
+ "modified": "2026-02-04 11:38:26.714877",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Sales Invoice",
@@ -2210,7 +2211,5 @@
  "sort_order": "DESC",
  "states": [],
  "timeline_field": "customer",
- "title_field": "title",
- "track_changes": 1,
- "track_seen": 1
+ "title_field": "title"
 }
