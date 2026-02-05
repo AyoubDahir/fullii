@@ -60,7 +60,7 @@ def make_sales_invoice(source_name, target_doc=None, ignore_permissions=True):
 
 		target.run_method("calculate_taxes_and_totals")
 		
-       
+	   
 
 		if source.company_address:
 			target.update({'company_address': source.company_address})
@@ -427,7 +427,7 @@ def make_emergency_invoice(source_name, target_doc=None, ignore_permissions=True
 
 		target.run_method("calculate_taxes_and_totals")
 		target.set_warehouse = 'Emergency Store - ABH'
-       
+	   
 
 		if source.company_address:
 			target.update({'company_address': source.company_address})

@@ -286,6 +286,7 @@ class DeliveryNote(SellingController):
 		)
 
 		if bypass_credit_limit_check_at_sales_order:
+			
 			for d in self.get("items"):
 				if not d.against_sales_invoice:
 					validate_against_credit_limit = True
