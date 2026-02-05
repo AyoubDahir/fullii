@@ -1,4 +1,5 @@
 from . import __version__ as app_version
+import his.monkey_patches.workflow
 
 app_name = "his"
 app_title = "HIS"
