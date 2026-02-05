@@ -27,5 +27,23 @@ class CustomSalesInvoice(SalesInvoice):
 			validate_against_credit_limit = True
 	
 		if validate_against_credit_limit:
-			check_credit_limit(self.customer, self.company, bypass_credit_limit_check_at_sales_order)
+
+		# Financial Audit Logging
+		if bypass_credit_limit_check_at_sales_order:
+			try:
+				audit_log = frappe.new_doc("Financial Audit Log")
+				audit_log.event_type = "Credit Limit Bypass"
+				audit_log.amount_involved = self.grand_total
+				audit_log.reason = f"Credit limit bypassed for Customer {self.customer}"
+				audit_log.details = frappe.as_json({
+					"customer": self.customer,
+					"company": self.company,
+					"invoice": self.name,
+					"outstanding_amount": self.outstanding_amount,
+					"credit_limit_bypass_flag": bypass_credit_limit_check_at_sales_order
+				})
+				audit_log.insert(ignore_permissions=True)
+			except Exception as e:
+				frappe.log_error(f"Failed to log Financial Audit: {str(e)}", "Financial Audit Error")
+
 

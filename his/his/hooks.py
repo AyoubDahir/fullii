@@ -143,6 +143,12 @@ doc_events = {
     #     "on_update": "his.api.inpatient_order.enqueue_sales_orders",
     #     "on_update_after_submit": "his.api.inpatient_order.enqueue_sales_orders",
     # },
+    "Stock Entry": {
+        "on_submit": "his.api.pharmacy_audit.log_stock_entry"
+    },
+    "Item Price": {
+        "on_update": "his.api.pharmacy_audit.log_item_price_change"
+    },
     # "Emergency": {
     #     "before_validate": "his.api.emergency.set_so_values_from_db",
     #     "on_update": "his.api.emergency.enqueue_sales_orders",
