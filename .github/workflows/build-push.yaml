@@ -4,18 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'erpnext/**'
-      - 'frappe/**'
-      - 'healthcare/**'
-      - 'his/**'
-      - 'hrms/**'
-      - 'insights/**'
-      - 'rasiin_design/**'
-      - 'rasiin_hr/**'
-      - 'frappe_whatsapp/**'
-      - '.github/workflows/**'
-      - 'Dockerfile'
   workflow_dispatch:
 
 env:
@@ -43,24 +31,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest
-            type=sha
-
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
-
-      - name: Image digest
-        run: echo "Image pushed with tags: ${{ steps.meta.outputs.tags }}"
