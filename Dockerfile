@@ -44,10 +44,19 @@ ARG ERPNEXT_VERSION
 
 WORKDIR /home/frappe
 
+# Configure git (required for bench)
+RUN git config --global user.email "build@example.com" && \
+    git config --global user.name "Build User"
+
 # Install bench
-RUN pip install --no-cache-dir frappe-bench \
-    && bench init --version ${FRAPPE_VERSION} --frappe-branch ${FRAPPE_VERSION} \
-    --python $(which python3) frappe-bench
+RUN pip install --no-cache-dir frappe-bench
+
+# Initialize bench with Frappe
+RUN bench init frappe-bench \
+    --frappe-branch ${FRAPPE_VERSION} \
+    --python $(which python3) \
+    --no-backups \
+    --skip-redis-config-generation
 
 WORKDIR /home/frappe/frappe-bench
 
@@ -69,7 +78,7 @@ COPY frappe_whatsapp ./apps/frappe_whatsapp
 # Install all apps' Python dependencies
 RUN for app in apps/*; do \
     if [ -f "$app/requirements.txt" ]; then \
-        pip install --no-cache-dir -r "$app/requirements.txt"; \
+    pip install --no-cache-dir -r "$app/requirements.txt"; \
     fi; \
     done
 
