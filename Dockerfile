@@ -23,8 +23,9 @@ RUN for app in healthcare his hrms insights rasiin_design rasiin_hr frappe_whats
     fi; \
     done
 
-# Build assets (combines all apps)
-RUN bench build --app frappe --app erpnext --app healthcare --app his --app hrms --app insights --app rasiin_design --app rasiin_hr --app frappe_whatsapp
+# Note: Apps will be installed and assets built when site is created
+# Use: bench new-site <site-name> --install-app healthcare --install-app his ...
+# Or configure via Helm values for automatic installation
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
