@@ -1,115 +1,31 @@
-# syntax=docker/dockerfile:1
+# Use official Frappe/ERPNext image as base
+FROM frappe/erpnext:v14
 
-# Multi-stage build for custom ERPNext with custom apps
-ARG FRAPPE_VERSION=version-14
-ARG ERPNEXT_VERSION=version-14
-ARG PYTHON_VERSION=3.11
-ARG NODE_VERSION=18
+USER root
 
-################################################################################
-# Base stage - Install system dependencies
-################################################################################
-FROM python:${PYTHON_VERSION}-slim-bookworm AS base
+# Copy custom apps from repository
+COPY --chown=frappe:frappe healthcare /home/frappe/frappe-bench/apps/healthcare
+COPY --chown=frappe:frappe his /home/frappe/frappe-bench/apps/his
+COPY --chown=frappe:frappe hrms /home/frappe/frappe-bench/apps/hrms
+COPY --chown=frappe:frappe insights /home/frappe/frappe-bench/apps/insights
+COPY --chown=frappe:frappe rasiin_design /home/frappe/frappe-bench/apps/rasiin_design
+COPY --chown=frappe:frappe rasiin_hr /home/frappe/frappe-bench/apps/rasiin_hr
+COPY --chown=frappe:frappe frappe_whatsapp /home/frappe/frappe-bench/apps/frappe_whatsapp
 
-# Install system dependencies
-RUN apt-get update && apt-get install --no-install-recommends -y \
-    # Required for building Python packages
-    gcc g++ make \
-    # Frappe dependencies
-    git curl wget \
-    libffi-dev python3-dev python3-venv \
-    libpq-dev mariadb-client default-libmysqlclient-dev \
-    redis-tools \
-    # Additional dependencies
-    wkhtmltopdf \
-    fonts-cantarell \
-    xfonts-75dpi xfonts-base \
-    # Cleanup
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Node.js
-ARG NODE_VERSION
-RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - \
-    && apt-get install -y nodejs \
-    && npm install -g yarn \
-    && rm -rf /var/lib/apt/lists/*
-
-################################################################################
-# Builder stage - Build Frappe bench with all apps
-################################################################################
-FROM base AS builder
-
-ARG FRAPPE_VERSION
-ARG ERPNEXT_VERSION
-
-WORKDIR /home/frappe
-
-# Configure git (required for bench)
-RUN git config --global user.email "build@example.com" && \
-    git config --global user.name "Build User"
-
-# Install bench
-RUN pip install --no-cache-dir frappe-bench
-
-# Initialize bench with Frappe
-RUN bench init frappe-bench \
-    --frappe-branch ${FRAPPE_VERSION} \
-    --python $(which python3) \
-    --no-backups \
-    --skip-redis-config-generation
+USER frappe
 
 WORKDIR /home/frappe/frappe-bench
 
-# Get ERPNext
-RUN bench get-app --branch ${ERPNEXT_VERSION} erpnext
-
-# Copy custom apps from the repository
-# The apps are in the root of this repo as directories
-COPY erpnext ./apps/erpnext-custom
-COPY frappe ./apps/frappe-custom
-COPY healthcare ./apps/healthcare
-COPY his ./apps/his
-COPY hrms ./apps/hrms
-COPY insights ./apps/insights
-COPY rasiin_design ./apps/rasiin_design
-COPY rasiin_hr ./apps/rasiin_hr
-COPY frappe_whatsapp ./apps/frappe_whatsapp
-
-# Install all apps' Python dependencies
-RUN for app in apps/*; do \
-    if [ -f "$app/requirements.txt" ]; then \
-    pip install --no-cache-dir -r "$app/requirements.txt"; \
+# Install Python dependencies for custom apps
+RUN for app in healthcare his hrms insights rasiin_design rasiin_hr frappe_whatsapp; do \
+    if [ -f "apps/$app/requirements.txt" ]; then \
+    /home/frappe/frappe-bench/env/bin/pip install --no-cache-dir -r "apps/$app/requirements.txt"; \
     fi; \
     done
 
-# Build assets
-RUN bench build --production
-
-################################################################################
-# Runtime stage - Create lean production image
-################################################################################
-FROM base AS runtime
-
-# Create frappe user
-RUN useradd -ms /bin/bash frappe
-
-# Copy bench from builder
-COPY --from=builder --chown=frappe:frappe /home/frappe/frappe-bench /home/frappe/frappe-bench
-
-WORKDIR /home/frappe/frappe-bench
-
-# Set environment variables
-ENV PYTHONUNBUFFERED=1 \
-    FRAPPE_SITE_NAME=site1.localhost
-
-# Expose ports
-EXPOSE 8000 9000 6787
-
-USER frappe
+# Build assets (combines all apps)
+RUN bench build --app frappe --app erpnext --app healthcare --app his --app hrms --app insights --app rasiin_design --app rasiin_hr --app frappe_whatsapp
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8000/api/method/ping || exit 1
-
-# Default command
-CMD ["bench", "start"]
